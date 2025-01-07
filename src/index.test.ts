@@ -230,4 +230,112 @@ describe('vite-dynamic-proxy', () => {
     expect(server.config.server.proxy?.['^/api'].target).toBe('http://localhost:8080')
     expect(next).toHaveBeenCalled()
   })
+
+  it('should handle request with undefined url', () => {
+    const plugin = dynamicProxyPlugin({
+      defaultTarget: 'http://localhost:3000',
+      path: '/api'
+    })
+
+    let middlewareFn: MiddlewareFunction | undefined
+    const useMock = vi.fn<[MiddlewareFunction], void>((fn) => {
+      middlewareFn = fn
+    })
+    const server: MockServer = {
+      config: {
+        server: {
+          proxy: {}
+        }
+      },
+      middlewares: {
+        use: useMock
+      }
+    }
+
+    const configureServerHook = plugin.configureServer as (server: ViteDevServer) => void
+    configureServerHook(server as unknown as ViteDevServer)
+
+    const next = vi.fn()
+    const req = {} as IncomingMessage
+    const res = {} as ServerResponse
+
+    middlewareFn!(req, res, next)
+    expect(next).toHaveBeenCalled()
+  })
+
+  it('should handle non-http/https debug target', () => {
+    const plugin = dynamicProxyPlugin({
+      defaultTarget: 'http://localhost:3000',
+      path: '/api'
+    })
+
+    let middlewareFn: MiddlewareFunction | undefined
+    const useMock = vi.fn<[MiddlewareFunction], void>((fn) => {
+      middlewareFn = fn
+    })
+    const server: MockServer = {
+      config: {
+        server: {
+          proxy: {}
+        }
+      },
+      middlewares: {
+        use: useMock
+      }
+    }
+
+    const configureServerHook = plugin.configureServer as (server: ViteDevServer) => void
+    configureServerHook(server as unknown as ViteDevServer)
+
+    const next = vi.fn()
+    const req = {
+      url: '/api/test',
+      headers: {
+        host: 'localhost:3000',
+        referer: 'http://localhost:3000?debug=localhost:4000'
+      }
+    } as IncomingMessage
+    const res = {} as ServerResponse
+
+    middlewareFn!(req, res, next)
+    expect(server.config.server.proxy!['/api'].target).toBe('http://localhost:4000')
+  })
+
+  it('should handle explicit http debug target', () => {
+    const plugin = dynamicProxyPlugin({
+      defaultTarget: 'http://localhost:3000',
+      path: '/api'
+    })
+
+    let middlewareFn: MiddlewareFunction | undefined
+    const useMock = vi.fn<[MiddlewareFunction], void>((fn) => {
+      middlewareFn = fn
+    })
+    const server: MockServer = {
+      config: {
+        server: {
+          proxy: {}
+        }
+      },
+      middlewares: {
+        use: useMock
+      }
+    }
+
+    const configureServerHook = plugin.configureServer as (server: ViteDevServer) => void
+    configureServerHook(server as unknown as ViteDevServer)
+
+    const next = vi.fn()
+    const req = {
+      url: '/api/test',
+      headers: {
+        host: 'localhost:3000',
+        referer: 'http://localhost:3000?debug=http://localhost:4000'
+      }
+    } as IncomingMessage
+    const res = {} as ServerResponse
+
+    middlewareFn!(req, res, next)
+    expect(server.config.server.proxy!['/api'].target).toBe('http://localhost:4000')
+  })
 })
