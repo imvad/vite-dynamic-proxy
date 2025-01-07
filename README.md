@@ -1,6 +1,7 @@
 # vite-dynamic-proxy
 
 [![npm version](https://badge.fury.io/js/vite-dynamic-proxy.svg)](https://badge.fury.io/js/vite-dynamic-proxy)
+[![CI](https://github.com/imvad/vite-dynamic-proxy/actions/workflows/ci.yml/badge.svg)](https://github.com/imvad/vite-dynamic-proxy/actions/workflows/ci.yml)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 

@@ -48,5 +48,13 @@
     "node": ">=14.6.0"
   },
   "author": "Vadim Alakhverdov",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imvad/vite-dynamic-proxy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/imvad/vite-dynamic-proxy/issues"
+  },
+  "homepage": "https://github.com/imvad/vite-dynamic-proxy#readme"
 }
