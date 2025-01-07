@@ -1,5 +1,9 @@
 # vite-dynamic-proxy
 
+[![npm version](https://badge.fury.io/js/vite-dynamic-proxy.svg)](https://badge.fury.io/js/vite-dynamic-proxy)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
+
 A Vite plugin that enables dynamic proxy configuration at runtime, allowing flexible and configurable proxy settings for development servers.
 
 ## Installation

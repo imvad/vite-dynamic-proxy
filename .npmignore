@@ -1,0 +1,23 @@
+# Source
+src/
+tests/
+coverage/
+
+# Config files
+.eslintrc
+.eslintignore
+.prettierrc
+tsconfig.json
+vitest.config.ts
+.github/
+.vscode/
+
+# Development files
+*.test.ts
+*.spec.ts
+.gitignore
+.npmignore
+
+# Build artifacts
+coverage/
+.nyc_output/
