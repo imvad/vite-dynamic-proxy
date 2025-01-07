@@ -8,8 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-01-07
 
 ### Added
-- Initial release
-- Dynamic proxy configuration at runtime
-- TypeScript support
+- Initial release of vite-dynamic-proxy
+- Dynamic proxy configuration at runtime with flexible configuration options
+- Full TypeScript support with type definitions
+- Comprehensive test coverage (100%)
+- CI/CD pipeline with GitHub Actions
+- Automated npm package publishing workflow
+- Support for Node.js 18.x and 20.x
 - Vite plugin implementation
-- Full test coverage
+
+[1.0.0]: https://github.com/imvad/vite-dynamic-proxy/releases/tag/v1.0.0
