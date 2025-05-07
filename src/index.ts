@@ -7,7 +7,7 @@ interface ProxyOptionsWithTarget extends ProxyOptions {
 
 export interface DynamicProxyOptions {
   defaultTarget: string;
-  path: string;
+  path: string | string[];
   changeOrigin?: boolean;
 }
 
@@ -19,20 +19,23 @@ export function dynamicProxyPlugin(options: DynamicProxyOptions): Plugin {
   if (!options.path) {
     throw new Error("vite-dynamic-proxy: path is required");
   }
-  // Validate path format - should be either a simple path or start with ^
-  if (!/^(\^)?\/[\w\-/]*$/.test(options.path)) {
-    throw new Error(
-      'vite-dynamic-proxy: path must be a valid path (e.g., "/api") or start with ^ (e.g., "^/api")'
-    );
-  }
-
+  
   const defaultTarget = options.defaultTarget;
-  const path = options.path;
+  const paths = Array.isArray(options.path) ? options.path : [options.path];
   const changeOrigin = options.changeOrigin ?? true;
+  
+  // Validate path format for each path
+  paths.forEach(path => {
+    if (!/^(\^)?\/[\w\-/]*$/.test(path)) {
+      throw new Error(
+        `vite-dynamic-proxy: path "${path}" must be a valid path (e.g., "/api") or start with ^ (e.g., "^/api")`
+      );
+    }
+  });
 
   console.log("\nvite-dynamic-proxy plugin configuration:");
   console.log("- defaultTarget:", defaultTarget);
-  console.log("- path:", path);
+  console.log("- paths:", paths);
   console.log("- changeOrigin:", changeOrigin, "\n");
 
   let lastDebugTarget: string | undefined;
@@ -40,12 +43,17 @@ export function dynamicProxyPlugin(options: DynamicProxyOptions): Plugin {
   return {
     name: "vite-dynamic-proxy",
     configureServer(server: ViteDevServer) {
-      server.config.server.proxy = {
-        [path]: {
+      // Create proxy configuration for each path
+      const proxyConfig: Record<string, ProxyOptionsWithTarget> = {};
+      
+      paths.forEach(path => {
+        proxyConfig[path] = {
           target: defaultTarget,
           changeOrigin,
-        },
-      };
+        };
+      });
+      
+      server.config.server.proxy = proxyConfig;
 
       server.middlewares.use(
         (req: IncomingMessage, res: ServerResponse, next: () => void) => {
@@ -55,11 +63,16 @@ export function dynamicProxyPlugin(options: DynamicProxyOptions): Plugin {
           }
 
           const url = new URL(req.url, `http://${req.headers.host}`);
-          // If path starts with ^, treat as regex, otherwise use startsWith
-          const matches = path.startsWith("^")
-            ? new RegExp(path).test(url.pathname)
-            : url.pathname.startsWith(path);
-          if (matches) {
+          
+          // Check if the URL matches any of our paths
+          const matchingPath = paths.find(path => {
+            // If path starts with ^, treat as regex, otherwise use startsWith
+            return path.startsWith("^")
+              ? new RegExp(path).test(url.pathname)
+              : url.pathname.startsWith(path);
+          });
+          
+          if (matchingPath) {
             const referer = req.headers.referer;
             if (referer) {
               const refererUrl = new URL(referer);
@@ -79,18 +92,22 @@ export function dynamicProxyPlugin(options: DynamicProxyOptions): Plugin {
                   lastDebugTarget = debugTarget;
                 }
 
-                // Update server proxy configuration
+                // Update server proxy configuration for all paths
                 if (server.config.server && server.config.server.proxy) {
                   const proxy = server.config.server.proxy as Record<
                     string,
                     ProxyOptionsWithTarget
                   >;
-                  if (proxy[path]) {
-                    proxy[path].target = debugTarget;
-                    if (debugTarget.startsWith("https://")) {
-                      proxy[path].secure = false;
+                  
+                  // Update all paths to use the debug target
+                  paths.forEach(path => {
+                    if (proxy[path]) {
+                      proxy[path].target = debugTarget;
+                      if (debugTarget.startsWith("https://")) {
+                        proxy[path].secure = false;
+                      }
                     }
-                  }
+                  });
                 }
               }
             }

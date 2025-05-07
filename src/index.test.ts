@@ -40,7 +40,7 @@ describe('vite-dynamic-proxy', () => {
     expect(() => dynamicProxyPlugin({
       defaultTarget: 'http://localhost:3000',
       path: 'invalid-path'
-    })).toThrow('vite-dynamic-proxy: path must be a valid path')
+    })).toThrow(/vite-dynamic-proxy: path .* must be a valid path/)
 
     // Valid paths should not throw
     expect(() => dynamicProxyPlugin({
@@ -51,6 +51,12 @@ describe('vite-dynamic-proxy', () => {
     expect(() => dynamicProxyPlugin({
       defaultTarget: 'http://localhost:3000',
       path: '^/api'
+    })).not.toThrow()
+    
+    // Multiple paths should not throw if valid
+    expect(() => dynamicProxyPlugin({
+      defaultTarget: 'http://localhost:3000',
+      path: ['/api', '/status']
     })).not.toThrow()
   })
 
@@ -77,6 +83,39 @@ describe('vite-dynamic-proxy', () => {
 
     expect(server.config.server.proxy).toEqual({
       '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }
+    })
+  })
+  
+  it('should configure server with multiple paths', () => {
+    const plugin = dynamicProxyPlugin({
+      defaultTarget: 'http://localhost:3000',
+      path: ['/api', '/status']
+    })
+
+    const useMock = vi.fn<[MiddlewareFunction], void>()
+    const server: MockServer = {
+      config: {
+        server: {
+          proxy: {}
+        }
+      },
+      middlewares: {
+        use: useMock
+      }
+    }
+
+    const configureServerHook = plugin.configureServer as (server: ViteDevServer) => void
+    configureServerHook(server as unknown as ViteDevServer)
+
+    expect(server.config.server.proxy).toEqual({
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      },
+      '/status': {
         target: 'http://localhost:3000',
         changeOrigin: true
       }
@@ -129,6 +168,61 @@ describe('vite-dynamic-proxy', () => {
     middlewareFn(req, res, next)
 
     expect(server.config.server.proxy?.['/api'].target).toBe('http://localhost:8080')
+    expect(next).toHaveBeenCalled()
+  })
+  
+  it('should handle debug target with multiple paths', () => {
+    const plugin = dynamicProxyPlugin({
+      defaultTarget: 'http://localhost:3000',
+      path: ['/api', '/status']
+    })
+
+    let middlewareFn: MiddlewareFunction | undefined
+    const useMock = vi.fn<[MiddlewareFunction], void>((fn) => {
+      middlewareFn = fn
+    })
+    const server: MockServer = {
+      config: {
+        server: {
+          proxy: {
+            '/api': {
+              target: 'http://localhost:3000',
+              changeOrigin: true
+            },
+            '/status': {
+              target: 'http://localhost:3000',
+              changeOrigin: true
+            }
+          }
+        }
+      },
+      middlewares: {
+        use: useMock
+      }
+    }
+
+    const configureServerHook = plugin.configureServer as (server: ViteDevServer) => void
+    configureServerHook(server as unknown as ViteDevServer)
+
+    expect(middlewareFn).toBeDefined()
+    if (!middlewareFn) return
+
+    const req = {
+      url: '/api/test',
+      headers: {
+        host: 'localhost:3000',
+        referer: 'http://localhost:3000?debug=localhost:8080'
+      }
+    } as IncomingMessage
+
+    const res = {} as ServerResponse
+    const next = vi.fn()
+
+    middlewareFn(req, res, next)
+
+    // Check that both paths are updated to the debug target
+    expect(server.config.server.proxy?.['/api'].target).toBe('http://localhost:8080')
+    expect(server.config.server.proxy?.['/status'].target).toBe('http://localhost:8080')
     expect(next).toHaveBeenCalled()
   })
 
